@@ -2,6 +2,7 @@
     "portfolio": [
         {
             "title": "Sweat & Spirit",
+            "description": "A collection of my best sports photos.",
             "preview": "DSC_3197.jpg",
             "folder": "sports"
         },
@@ -23,6 +24,7 @@
         {
             "title": "Bloomington North v Columbus East Boys Soccer Match",
             "short_title": "B.N v C.E Boys Soccer Match",
+            "description": "Photos from the Bloomington North v Columbus East Boys Soccer Match.",
             "preview": "DSC_6243.jpg",
             "folder": "08_26_2025_boys_soccer",
             "date": "2025-08-26",
@@ -47,6 +49,7 @@
         {
             "title": "Bloomington North v Zionsville Boys Soccer Scrimmage",
             "short_title": "B.N v Z.H Boys Soccer Scrimmage",
+            "description": "Photos from the Bloomington North v Zionsville Boys Soccer Scrimmage.",
             "preview": "DSC_3259.jpg",
             "folder": "08_14_2025_boys_soccer",
             "date": "2025-08-14",
