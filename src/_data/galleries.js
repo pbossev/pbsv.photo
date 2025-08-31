@@ -76,7 +76,7 @@ function getGalleries() {
                     ),
                     title: entry.title,
                     short_title: entry.short_title || entry.title,
-                    description: "",
+                    description: entry.description || "",
                     location: entry.location || "",
                     date: entry.date || null,
                     preview: entry.preview
