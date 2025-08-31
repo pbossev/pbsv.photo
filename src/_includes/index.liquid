@@ -1,0 +1,20 @@
+---
+layout: _barebones
+---
+
+{% assign latest_group = galleries.eventsByMonth[0] %}
+{% if latest_group %}
+  {% assign latest_event = latest_group.items[0] %}
+{% endif %}
+
+<footer class="fixed top-0 w-full border-b border-zinc-700 bg-zinc-900 z-50 text-center">
+  <p class="p-2 whitespace-nowrap overflow-x-auto text-ellipsis">
+    Check out
+    <a href="{{ latest_event.path }}" class="whitespace-nowrap"><span class="hidden md:inline">{{ latest_event.title }}</span><span class="inline md:hidden">{{ latest_event.short_title }}</span></a>
+    📸
+  </p>
+</footer>
+
+<main class="p-8 grow shrink-0 basis-auto sm:px-20 md:px-32 lg:mx-auto lg:max-w-4xl xl:max-w-6xl 2xl:max-w-6xl w-full">
+  {{ content }}
+</main>

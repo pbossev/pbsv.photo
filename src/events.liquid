@@ -1,0 +1,38 @@
+---
+layout: base
+permalink: /events/
+title: Events 📜
+---
+
+<div>
+  {% include "_back.liquid" %}
+
+  <div class="flex justify-center items-center my-2">
+    <h1>All Events</h1>
+  </div>
+</div>
+
+<div class="flex flex-col space-y-4">
+  {% for group in galleries.eventsByMonth %}
+    <div class="space-y-2">
+      <h2>
+        {{ group.month | date: "%B %Y" }}
+      </h2>
+
+      <div>
+        {% for event in group.items %}
+          <div class="flex flex-row justify-between">
+            <div class=" flex flex-row gap-x-4">
+              <p class="text-zinc-400">{{ event.date | date: "%d.%m.%Y" }}</p>
+              <a href="{{ event.path }}">
+                <span class="hidden xl:inline">{{ event.title }}</span>
+                <span class="inline xl:hidden">{{ event.short_title }}</span>
+              </a>
+            </div>
+            <p class="text-zinc-400 lg:block hidden">{{ event.location }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

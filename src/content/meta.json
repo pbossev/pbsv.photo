@@ -1,0 +1,56 @@
+{
+    "portfolio": [
+        {
+            "title": "Sweat & Spirit",
+            "preview": "DSC_3197.jpg",
+            "folder": "sports"
+        },
+        {
+            "title": "Feather & Fur",
+            "preview": "DSC_1920.jpg",
+            "folder": "wildlife"
+        },
+        {
+            "title": "Speed & Power",
+            "folder": "planes"
+        },
+        {
+            "title": "Face & Feeling",
+            "folder": "portraits"
+        }
+    ],
+    "events": [
+        {
+            "title": "Bloomington North v Columbus East Boys Soccer Match",
+            "short_title": "B.N v C.E Boys Soccer Match",
+            "preview": "DSC_6243.jpg",
+            "folder": "08_26_2025_boys_soccer",
+            "date": "2025-08-26",
+            "location": "BHSN Football Field"
+        },
+        {
+            "title": "Bloomington North v Brownstown Central Volleyball Match",
+            "short_title": "B.N v B.C Volleyball Match",
+            "folder": "08_21_2025_volleyball",
+            "date": "2025-08-21",
+            "location": "BHSN Gymnasium",
+            "visible": false
+        },
+        {
+            "title": "Bloomington North v Columbus East Girls Soccer Match",
+            "short_title": "B.N v C.E Girls Soccer Match",
+            "folder": "08_20_2025_girls_soccer",
+            "date": "2025-08-20",
+            "location": "BHSN Football Field",
+            "visible": false
+        },
+        {
+            "title": "Bloomington North v Zionsville Boys Soccer Scrimmage",
+            "short_title": "B.N v Z.H Boys Soccer Scrimmage",
+            "preview": "DSC_3259.jpg",
+            "folder": "08_14_2025_boys_soccer",
+            "date": "2025-08-14",
+            "location": "BHSN Football Field"
+        }
+    ]
+}

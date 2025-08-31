@@ -1,0 +1,30 @@
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>{{ title }}</title>
+  <meta name="description" content="{{ gallery.description | default: "pbsv.photo's photography site." }}">
+
+  <link
+    rel="preload"
+    href="{{ '/assets/css/style.css' | url }}"
+    as="style">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | url }}">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <meta property="og:site_name" content="pbsv.photo">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ title }}">
+  <meta property="og:description" content="{{ gallery.description | default: "pbsv.photo's photography site." }}">
+  {% if gallery and gallery.preview %}
+    <meta property="og:image" content="{{ gallery.preview | replace: '.jpg', '_preview.webp' | url }}">
+  {% endif %}
+  <meta property="og:url" content="{{ page.url | url }}">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ title }}">
+  <meta name="twitter:description" content="{{ gallery.description | default: "pbsv.photo's photography site." }}">
+  {% if gallery and gallery.preview %}
+    <meta name="twitter:image" content="{{ gallery.preview | replace: '.jpg', '_preview.webp' | url }}">
+  {% endif %}
+</head>

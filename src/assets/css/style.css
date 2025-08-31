@@ -1,0 +1,247 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --red: #ff453a;
+    --orange: #ff9f0a;
+    --green: #00cc66;
+    --mint: #66d4cf;
+    --blue: #0a84ff;
+    --purple: #df5af2;
+    --pink: #ff375f;
+}
+
+body {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+h1 {
+    @apply text-2xl;
+}
+
+h2 {
+    @apply text-lg;
+}
+
+@layer base {
+
+    html {
+        font-size: 16px;
+    }
+
+    @screen sm {
+        html {
+            font-size: 17px;
+        }
+    }
+
+    @screen md {
+        html {
+            font-size: 18px;
+        }
+    }
+
+    @screen lg {
+        html {
+            font-size: 19px;
+        }
+    }
+
+    @screen xl {
+        html {
+            font-size: 20px;
+        }
+    }
+
+    @screen 2xl {
+        html {
+            font-size: 21px;
+        }
+    }
+}
+
+.wave {
+    animation-name: wave-animation;
+    animation-duration: 2.5s;
+    animation-iteration-count: infinite;
+    transform-origin: 70% 70%;
+    display: inline-block;
+}
+
+@keyframes wave-animation {
+    0% {
+        transform: rotate(0.0deg)
+    }
+
+    10% {
+        transform: rotate(14.0deg)
+    }
+
+    20% {
+        transform: rotate(-8.0deg)
+    }
+
+    30% {
+        transform: rotate(14.0deg)
+    }
+
+    40% {
+        transform: rotate(-4.0deg)
+    }
+
+    50% {
+        transform: rotate(10.0deg)
+    }
+
+    60% {
+        transform: rotate(0.0deg)
+    }
+
+    /* Reset for the last half to pause */
+    100% {
+        transform: rotate(0.0deg)
+    }
+}
+
+.row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+tr td {
+    padding-right: 1rem;
+}
+
+table {
+    width: 100%;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    white-space: nowrap;
+}
+
+thead {
+    border-bottom-width: 1px;
+    @apply border-zinc-700;
+}
+
+div:has(> table) {
+    overflow-x: auto;
+}
+
+.gold {
+    background-color: rgba(255, 215, 0, .2);
+}
+
+.silver {
+    background-color: rgba(192, 192, 192, .2);
+}
+
+.bronze {
+    background-color: rgba(205, 127, 50, .2);
+}
+
+.flutter {
+    color: #20bcfd;
+}
+
+.eleventy {
+    color: #fff;
+    background-color: #212121;
+}
+
+.tailwind {
+    color: #38bdf8;
+}
+
+.arduino {
+    color: #008184;
+}
+
+.liquid {
+    color: #3399cc;
+}
+
+.nodejs {
+    color: #5aaa46;
+}
+
+.typescript {
+    color: #3178c6;
+}
+
+.html {
+    color: #eb5827;
+}
+
+.css {
+    color: #2758eb;
+}
+
+.latex {
+    color: #008080;
+}
+
+.rust {
+    color: #f74c00;
+}
+
+small {
+    @apply text-zinc-500;
+}
+
+ul {
+    list-style: none;
+    @apply lg:columns-2 xl:columns-3;
+}
+
+ul li {
+    @apply break-inside-avoid;
+}
+
+ul li::before {
+    content: '→ ';
+    color: var(--green);
+}
+
+.green {
+    color: var(--green);
+}
+
+em,
+strong {
+    color: var(--green);
+}
+
+a:link {
+    text-decoration-color: var(--blue);
+}
+
+a {
+    @apply text-zinc-300;
+    text-decoration-color: transparent;
+    text-decoration: underline;
+    transition: all 0.2s ease;
+}
+
+a:visited {
+    text-decoration-color: var(--purple);
+}
+
+a:hover {
+    @apply brightness-75;
+}
+
+/* a:hover {
+    text-decoration-color: var(--red);
+} */
+
+/*
+Arrows
+*/
+
+.arrow-external:after {
+    content: '↗';
+}
