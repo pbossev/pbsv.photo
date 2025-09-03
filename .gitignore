@@ -2,6 +2,9 @@
 node_modules/
 _site/
 
+# previews
+src/content/**/*.webp
+
 # Optional npm cache directory
 .npm
 
