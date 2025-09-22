@@ -37,7 +37,13 @@ def pad_to_instagram(
         new_h = max_h
         new_w = int(max_h * img_ratio)
 
-    resized = img.resize((new_w, new_h), Image.LANCZOS)
+    # Upscale if the image is too small
+    # To handle cases where the original image is smaller than the calculated new_w/new_h,
+    # the resize method will automatically upscale the image to the target size.
+    # The Image.Resampling.LANCZOS filter (or Image.LANCZOS for older Pillow versions)
+    # is a high-quality filter suitable for both downscaling and upscaling.
+    
+    resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
 
     # Create padded canvas
     canvas = Image.new("RGB", (target_w, target_h), background_color)

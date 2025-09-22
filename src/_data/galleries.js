@@ -101,17 +101,28 @@ function groupEventsByMonth(galleries) {
     events.forEach(event => {
         const date = new Date(event.date);
 
-        // Use middle of the month to avoid timezone rollover issues
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-15`;
+        // Format event.date as dd.mm.yyyy
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        event.formattedDate = `${day}.${month}.${year}`;
 
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(event);
+        // Group key as "MonthName yyyy"
+        const monthName = date.toLocaleString("en-US", { month: "long" });
+        const groupKey = `${monthName} ${year}`;
+
+        if (!grouped[groupKey]) grouped[groupKey] = [];
+        grouped[groupKey].push(event);
     });
 
-    // Convert to array format sorted by month descending
+    // Convert to array format sorted by actual date descending
     return Object.entries(grouped)
-        .map(([month, items]) => ({ month, items }))
-        .sort((a, b) => (a.month < b.month ? 1 : -1));
+        .map(([month, items]) => {
+            const date = new Date(items[0].date);
+            return { month, items, sortKey: date };
+        })
+        .sort((a, b) => b.sortKey - a.sortKey)
+        .map(({ month, items }) => ({ month, items }));
 }
 
 const galleries = getGalleries();

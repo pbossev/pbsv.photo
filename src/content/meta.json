@@ -3,7 +3,7 @@
         {
             "title": "Sweat & Spirit",
             "description": "A collection of my best sports photos.",
-            "preview": "DSC_3197.jpg",
+            "preview": "DSC_6243.jpg",
             "folder": "sports"
         },
         {
@@ -53,6 +53,15 @@
             "preview": "DSC_3259.jpg",
             "folder": "08_14_2025_boys_soccer",
             "date": "2025-08-14",
+            "location": "BHSN Football Field"
+        },
+        {
+            "title": "Bloomington North v Terre Haute South Boys Soccer Match",
+            "short_title": "B.N v T.H.S Boys Soccer Match",
+            "description": "Photos from the Bloomington North v Terre Haute South Boys Soccer Match.",
+            "preview": "DSC_7230.jpg",
+            "folder": "09_02_2025_boys_soccer",
+            "date": "2025-09-02",
             "location": "BHSN Football Field"
         }
     ]
