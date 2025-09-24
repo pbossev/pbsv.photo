@@ -18,12 +18,40 @@ function readGlobalMeta() {
 function getImageMeta(filePath, publicPath) {
     const buffer = fs.readFileSync(filePath);
     const { width, height, type } = imageSize(buffer);
+
+    // Try to also load _preview.webp
+    const previewPath = filePath.replace(/\.(jpg|jpeg|png)$/i, "_preview.webp");
+    let previewMeta = null;
+
+    if (fs.existsSync(previewPath)) {
+        try {
+            const previewBuffer = fs.readFileSync(previewPath);
+            const { width: pw, height: ph, type: pt } = imageSize(previewBuffer);
+            previewMeta = {
+                url: publicPath.replace(/\.(jpg|jpeg|png)$/i, "_preview.webp"),
+                width: pw,
+                height: ph,
+                type: pt
+            };
+        } catch (err) {
+            console.warn("Could not read preview image:", previewPath, err);
+        }
+    }
+
     return {
         url: publicPath,
         width,
         height,
-        type
+        type,
+        preview: previewMeta
     };
+}
+
+
+function getImageNumber(fileName) {
+    // Match first number in the filename
+    const match = fileName.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
 }
 
 function getGalleries() {
@@ -33,11 +61,15 @@ function getGalleries() {
 
     // portfolio
     meta.portfolio
-        .filter(entry => entry.visible !== false) // default true
+        .filter(entry => entry.visible !== false)
         .forEach(entry => {
             const folderPath = path.join(baseDir, "portfolio", entry.folder);
             if (fs.existsSync(folderPath) && fs.lstatSync(folderPath).isDirectory()) {
-                const images = getImageFiles(folderPath);
+                let images = getImageFiles(folderPath);
+
+                // Sort images numerically
+                images.sort((a, b) => getImageNumber(a) - getImageNumber(b));
+
                 galleries.push({
                     type: "portfolio",
                     path: `/${entry.folder}/`,
@@ -60,11 +92,15 @@ function getGalleries() {
 
     // events
     meta.events
-        .filter(entry => entry.visible !== false) // default true
+        .filter(entry => entry.visible !== false)
         .forEach(entry => {
             const folderPath = path.join(baseDir, "events", entry.folder);
             if (fs.existsSync(folderPath) && fs.lstatSync(folderPath).isDirectory()) {
-                const images = getImageFiles(folderPath);
+                let images = getImageFiles(folderPath);
+
+                // Sort images numerically
+                images.sort((a, b) => getImageNumber(a) - getImageNumber(b));
+
                 galleries.push({
                     type: "events",
                     path: `/${entry.folder}/`,
@@ -90,8 +126,6 @@ function getGalleries() {
 
     return galleries;
 }
-
-
 
 // Group events by year-month
 function groupEventsByMonth(galleries) {

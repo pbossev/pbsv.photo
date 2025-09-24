@@ -1,8 +1,13 @@
 const fs = require("fs");
 const path = require("path");
 
-const galleriesPath = path.join(__dirname, "..", "content", "events"); // adjust if you want portfolio too
 const previewSuffix = "_preview";
+
+// Paths to clear
+const galleriesPaths = [
+    path.join(__dirname, "..", "content", "events"),
+    path.join(__dirname, "..", "content", "portfolio"),
+];
 
 function isPreview(file) {
     const ext = path.extname(file);
@@ -15,7 +20,9 @@ function clearPreviews(folder) {
 
     for (let file of files) {
         const fullPath = path.join(folder, file);
-        if (fs.lstatSync(fullPath).isDirectory()) {
+        const stat = fs.lstatSync(fullPath);
+
+        if (stat.isDirectory()) {
             clearPreviews(fullPath);
         } else if (isPreview(file)) {
             console.log(`Deleting preview: ${fullPath}`);
@@ -25,11 +32,13 @@ function clearPreviews(folder) {
 }
 
 function main() {
-    if (!fs.existsSync(galleriesPath)) {
-        console.error("Path not found:", galleriesPath);
-        process.exit(1);
+    for (let galleriesPath of galleriesPaths) {
+        if (!fs.existsSync(galleriesPath)) {
+            console.error("Path not found:", galleriesPath);
+            continue;
+        }
+        clearPreviews(galleriesPath);
     }
-    clearPreviews(galleriesPath);
     console.log("All previews cleared.");
 }
 
