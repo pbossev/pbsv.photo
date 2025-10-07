@@ -127,7 +127,6 @@ function getGalleries() {
     return galleries;
 }
 
-// Group events by year-month
 function groupEventsByMonth(galleries) {
     const events = galleries.filter(g => g.type === "events" && g.date);
     const grouped = {};
@@ -149,14 +148,19 @@ function groupEventsByMonth(galleries) {
         grouped[groupKey].push(event);
     });
 
-    // Convert to array format sorted by actual date descending
+    // Convert to array format sorted by actual date descending (for months)
     return Object.entries(grouped)
         .map(([month, items]) => {
             const date = new Date(items[0].date);
             return { month, items, sortKey: date };
         })
         .sort((a, b) => b.sortKey - a.sortKey)
-        .map(({ month, items }) => ({ month, items }));
+        .map(({ month, items }) => {
+            // ⭐ ADD THIS LINE TO SORT EVENTS WITHIN THE MONTH
+            items.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            return { month, items };
+        });
 }
 
 const galleries = getGalleries();

@@ -112,81 +112,8 @@ h2 {
     gap: 1.5rem;
 }
 
-tr td {
-    padding-right: 1rem;
-}
-
-table {
-    width: 100%;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    white-space: nowrap;
-}
-
-thead {
-    border-bottom-width: 1px;
-    @apply border-zinc-700;
-}
-
 div:has(> table) {
     overflow-x: auto;
-}
-
-.gold {
-    background-color: rgba(255, 215, 0, .2);
-}
-
-.silver {
-    background-color: rgba(192, 192, 192, .2);
-}
-
-.bronze {
-    background-color: rgba(205, 127, 50, .2);
-}
-
-.flutter {
-    color: #20bcfd;
-}
-
-.eleventy {
-    color: #fff;
-    background-color: #212121;
-}
-
-.tailwind {
-    color: #38bdf8;
-}
-
-.arduino {
-    color: #008184;
-}
-
-.liquid {
-    color: #3399cc;
-}
-
-.nodejs {
-    color: #5aaa46;
-}
-
-.typescript {
-    color: #3178c6;
-}
-
-.html {
-    color: #eb5827;
-}
-
-.css {
-    color: #2758eb;
-}
-
-.latex {
-    color: #008080;
-}
-
-.rust {
-    color: #f74c00;
 }
 
 small {

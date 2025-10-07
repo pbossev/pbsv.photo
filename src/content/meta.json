@@ -22,15 +22,6 @@
     ],
     "events": [
         {
-            "title": "Bloomington North v Columbus East Boys Soccer Match",
-            "short_title": "B.N v C.E Boys Soccer Match",
-            "description": "Photos from the Bloomington North v Columbus East Boys Soccer Match.",
-            "preview": "DSC_6243.jpg",
-            "folder": "08_26_2025_boys_soccer",
-            "date": "2025-08-26",
-            "location": "BHSN Football Field"
-        },
-        {
             "title": "Bloomington North v Brownstown Central Volleyball Match",
             "short_title": "B.N v B.C Volleyball Match",
             "folder": "08_21_2025_volleyball",
@@ -45,6 +36,24 @@
             "date": "2025-08-20",
             "location": "BHSN Football Field",
             "visible": false
+        },
+        {
+            "title": "Bloomington North v Franklin Community Boys Tennis Match",
+            "short_title": "B.N v F.C Boys Tennis Match",
+            "description": "Photos from the Bloomington North v Franklin Community Boys Tennis Match.",
+            "preview": "DSC_7462.jpg",
+            "folder": "09_03_2025_boys_tennis",
+            "date": "2025-09-03",
+            "location": "BHSS Tennis Courts"
+        },
+        {
+            "title": "Bloomington North v Columbus East Boys Soccer Match",
+            "short_title": "B.N v C.E Boys Soccer Match",
+            "description": "Photos from the Bloomington North v Columbus East Boys Soccer Match.",
+            "preview": "DSC_6243.jpg",
+            "folder": "08_26_2025_boys_soccer",
+            "date": "2025-08-26",
+            "location": "BHSN Football Field"
         },
         {
             "title": "Bloomington North v Zionsville Boys Soccer Scrimmage",
