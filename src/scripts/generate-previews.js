@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const sharp = require("sharp"); // npm install sharp
+const sharp = require("sharp");
 const os = require("os");
 
 const basePaths = [
@@ -9,13 +9,6 @@ const basePaths = [
 ];
 
 const previewSuffix = "_preview";
-
-// Use half of available CPUs to avoid overload
-const CONCURRENCY = Math.max(2, Math.floor(os.cpus().length / 2));
-
-function isImage(file) {
-    return /\.(jpe?g|png|webp)$/i.test(file);
-}
 
 async function generatePreview(fullPath, previewPath, mode) {
     console.log(`Generating preview for ${path.basename(fullPath)} (${mode})...`);
@@ -42,7 +35,7 @@ async function processGallery(folder, mode) {
     const files = fs.readdirSync(folder);
 
     const jobs = files
-        .filter(isImage)
+        .filter((file) => /\.(jpe?g|png|webp)$/i.test(file))
         .map(file => {
             const origExt = path.extname(file);
             const base = path.basename(file, origExt);
@@ -67,7 +60,7 @@ async function processGallery(folder, mode) {
         }
     }
 
-    const workers = Array.from({ length: CONCURRENCY }, worker);
+    const workers = Array.from({ length: Math.max(2, Math.floor(os.cpus().length / 2)) }, worker);
     await Promise.all(workers);
 }
 

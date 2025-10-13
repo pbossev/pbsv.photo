@@ -23,7 +23,7 @@
     "events": [
         {
             "title": "Bloomington North v Brownstown Central Volleyball Match",
-            "short_title": "B.N v B.C Volleyball Match",
+            "short_title": "B.N v B.C Volleyball",
             "folder": "08_21_2025_volleyball",
             "date": "2025-08-21",
             "location": "BHSN Gymnasium",
@@ -31,7 +31,7 @@
         },
         {
             "title": "Bloomington North v Columbus East Girls Soccer Match",
-            "short_title": "B.N v C.E Girls Soccer Match",
+            "short_title": "B.N v C.E Girls Soccer",
             "folder": "08_20_2025_girls_soccer",
             "date": "2025-08-20",
             "location": "BHSN Football Field",
@@ -39,7 +39,7 @@
         },
         {
             "title": "Bloomington North v Franklin Community Boys Tennis Match",
-            "short_title": "B.N v F.C Boys Tennis Match",
+            "short_title": "B.N v F.C Boys Tennis",
             "description": "Photos from the Bloomington North v Franklin Community Boys Tennis Match.",
             "preview": "DSC_7462.jpg",
             "folder": "09_03_2025_boys_tennis",
@@ -48,7 +48,7 @@
         },
         {
             "title": "Bloomington North v Columbus East Boys Soccer Match",
-            "short_title": "B.N v C.E Boys Soccer Match",
+            "short_title": "B.N v C.E Boys Soccer",
             "description": "Photos from the Bloomington North v Columbus East Boys Soccer Match.",
             "preview": "DSC_6243.jpg",
             "folder": "08_26_2025_boys_soccer",
@@ -57,7 +57,7 @@
         },
         {
             "title": "Bloomington North v Bedford North Lawrence Boys Soccer Match",
-            "short_title": "B.N v B.N.L Boys Soccer Match",
+            "short_title": "B.N v B.N.L Boys Soccer",
             "description": "Photos from the Bloomington North v Bedford North Lawrence Boys Soccer Match.",
             "preview": "DSC_0089.jpg",
             "folder": "09_25_2025_boys_soccer",
@@ -66,7 +66,7 @@
         },
         {
             "title": "Bloomington North v Zionsville Boys Soccer Scrimmage",
-            "short_title": "B.N v Z.H Boys Soccer Scrimmage",
+            "short_title": "B.N v Z.H Boys Soccer",
             "description": "Photos from the Bloomington North v Zionsville Boys Soccer Scrimmage.",
             "preview": "DSC_3259.jpg",
             "folder": "08_14_2025_boys_soccer",
@@ -75,7 +75,7 @@
         },
         {
             "title": "Bloomington North v Terre Haute South Boys Soccer Match",
-            "short_title": "B.N v T.H.S Boys Soccer Match",
+            "short_title": "B.N v T.H.S Boys Soccer",
             "description": "Photos from the Bloomington North v Terre Haute South Boys Soccer Match.",
             "preview": "DSC_7230.jpg",
             "folder": "09_02_2025_boys_soccer",
@@ -84,7 +84,7 @@
         },
         {
             "title": "Bloomington North v Bloomington South Boys Soccer Match",
-            "short_title": "B.N v B.S Boys Soccer Match",
+            "short_title": "B.N v B.S Boys Soccer",
             "description": "Photos from the Bloomington North v Bloomington South Boys Soccer Match. Most photos from the game are not published here, as they are reserved for other purposes.",
             "preview": "DSC_9341.jpg",
             "folder": "09_18_2025_boys_soccer",
