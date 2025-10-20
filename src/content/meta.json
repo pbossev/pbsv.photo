@@ -1,15 +1,16 @@
 {
     "portfolio": [
         {
-            "title": "Sweat & Spirit",
-            "description": "A collection of my best sports photos.",
-            "preview": "9.jpg",
-            "folder": "sports"
+            "title": "Feather & Fur",
+            "description": "A collection of my best wildlife photos.",
+            "preview": "1.jpg",
+            "folder": "wildlife"
         },
         {
-            "title": "Feather & Fur",
-            "preview": "DSC_1920.jpg",
-            "folder": "wildlife"
+            "title": "Sweat & Spirit",
+            "description": "A collection of my best sports photos.",
+            "preview": "80.jpg",
+            "folder": "sports"
         },
         {
             "title": "Speed & Power",
