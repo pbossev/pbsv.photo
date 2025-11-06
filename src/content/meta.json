@@ -18,7 +18,9 @@
         },
         {
             "title": "Face & Feeling",
-            "folder": "portraits"
+            "folder": "portraits",
+            "preview": "1.jpg",
+            "description": "A collection of my best portrait photos."
         }
     ],
     "events": [
