@@ -17,6 +17,12 @@
             "folder": "planes"
         },
         {
+            "title": "Stars & Skies",
+            "folder": "astro",
+            "preview": "70.jpg",
+            "description": "A collection of my best astrophotography."
+        },
+        {
             "title": "Face & Feeling",
             "folder": "portraits",
             "preview": "1.jpg",
