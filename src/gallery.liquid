@@ -254,6 +254,7 @@ eleventyComputed:
   let translateY = 0;
   let lastTranslateX = 0;
   let lastTranslateY = 0;
+  const preloadedImages = new Map();
 
   const galleryImages = [
     {% assign image_index = 0 %}
@@ -263,6 +264,24 @@ eleventyComputed:
       {% endunless %}
     {% endfor %}
   ];
+
+  function preloadImage(src) {
+    if (preloadedImages.has(src)) return;
+    
+    const img = new Image();
+    img.src = src;
+    preloadedImages.set(src, img);
+  }
+
+  function preloadAdjacentImages() {
+    if (galleryImages.length <= 1) return;
+
+    const prevIndex = currentImageIndex === 0 ? galleryImages.length - 1 : currentImageIndex - 1;
+    const nextIndex = currentImageIndex === galleryImages.length - 1 ? 0 : currentImageIndex + 1;
+
+    preloadImage(galleryImages[prevIndex]);
+    preloadImage(galleryImages[nextIndex]);
+  }
 
   function openLightbox(src, index = 0) {
     const lb = document.getElementById("lightbox");
@@ -277,6 +296,7 @@ eleventyComputed:
     loadImage(src);
     updateNavigationButtons();
     updateZoomPercentage();
+    preloadAdjacentImages();
 
     document.addEventListener("keydown", handleKeyPress);
   }
@@ -317,6 +337,7 @@ eleventyComputed:
     loadImage(galleryImages[currentImageIndex]);
     updateNavigationButtons();
     updateZoomPercentage();
+    preloadAdjacentImages();
   }
 
   function updateNavigationButtons() {
