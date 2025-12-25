@@ -6,6 +6,8 @@ require("dotenv").config();
 const isCloudflare = !!process.env.CF_PAGES;
 const PUBLIC_URL = "https://r2.pbsv.photo";
 
+console.log(`🔍 Loading galleries data (Cloudflare: ${isCloudflare})`);
+
 function readGlobalMeta() {
     const metaPath = path.join("src/_data", "galleryMetadata.json");
     if (fs.existsSync(metaPath)) {
