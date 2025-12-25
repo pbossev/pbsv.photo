@@ -17,6 +17,7 @@ const GALLERY_META_FILE = path.join(__dirname, "..", "_data", "galleryMetadata.j
 const CONCURRENCY = Math.max(4, os.cpus().length); // Parallel uploads
 
 // R2 Client
+console.log("Initializing R2 client...");
 const r2Client = new S3Client({
     region: "auto",
     endpoint: process.env.ENDPOINT,
@@ -97,6 +98,7 @@ async function listR2Objects() {
     let continuationToken = undefined;
 
     do {
+        console.log("  ⏳ Fetching R2 object list...");
         const response = await r2Client.send(
             new ListObjectsV2Command({
                 Bucket: BUCKET_NAME,
