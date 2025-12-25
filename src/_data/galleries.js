@@ -1,5 +1,10 @@
 const fs = require("fs");
 const path = require("path");
+const { S3Client, ListObjectsV2Command, HeadObjectCommand } = require("@aws-sdk/client-s3");
+require("dotenv").config();
+
+const isCloudflare = !!process.env.CF_PAGES;
+const PUBLIC_URL = "https://r2.pbsv.photo";
 
 function readGlobalMeta() {
     const metaPath = path.join("src/_data", "galleryMetadata.json");
@@ -9,11 +14,116 @@ function readGlobalMeta() {
     return { portfolio: [], events: [] };
 }
 
-function readImageMetadata() {
+// Query R2 bucket and generate metadata from objects
+async function generateMetadataFromR2() {
+    if (!process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+        console.error("✗ R2 credentials not available. Cannot fetch metadata.");
+        return {};
+    }
+
+    const r2Client = new S3Client({
+        region: "auto",
+        endpoint: process.env.R2_ENDPOINT,
+        forcePathStyle: true,
+        credentials: {
+            accessKeyId: process.env.R2_ACCESS_KEY_ID,
+            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+        },
+    });
+
+    const metadata = {};
+    let continuationToken = undefined;
+
+    console.log("📥 Querying R2 bucket for images...");
+
+    try {
+        do {
+            const response = await r2Client.send(
+                new ListObjectsV2Command({
+                    Bucket: "photos",
+                    ContinuationToken: continuationToken,
+                })
+            );
+
+            if (response.Contents) {
+                for (const obj of response.Contents) {
+                    const key = obj.Key;
+
+                    // Skip metadata files and non-image files
+                    if (key.startsWith(".") || !key.match(/\.(jpg|jpeg|png|webp)$/i)) {
+                        continue;
+                    }
+
+                    // Skip preview files for now, we'll pair them later
+                    if (key.includes("_preview")) {
+                        continue;
+                    }
+
+                    // Get object metadata to extract dimensions
+                    try {
+                        const headResponse = await r2Client.send(
+                            new HeadObjectCommand({
+                                Bucket: "photos",
+                                Key: key,
+                            })
+                        );
+
+                        // Extract dimensions from metadata (if stored) or use defaults
+                        const width = headResponse.Metadata?.width ? parseInt(headResponse.Metadata.width) : null;
+                        const height = headResponse.Metadata?.height ? parseInt(headResponse.Metadata.height) : null;
+                        const type = key.match(/\.(\w+)$/i)?.[1]?.toLowerCase() || "jpg";
+
+                        // Build corresponding preview key
+                        const previewKey = key.replace(/\.(jpg|jpeg|png)$/i, "_preview.webp");
+
+                        metadata[key] = {
+                            url: `${PUBLIC_URL}/${key}`,
+                            width: width,
+                            height: height,
+                            type: type,
+                            preview: {
+                                url: `${PUBLIC_URL}/${previewKey}`,
+                                width: null,  // Preview dimensions would need to be extracted too
+                                height: null,
+                                type: "webp"
+                            }
+                        };
+                    } catch (err) {
+                        console.warn(`⚠ Failed to get metadata for ${key}: ${err.message}`);
+                    }
+                }
+            }
+
+            continuationToken = response.NextContinuationToken;
+        } while (continuationToken);
+
+        console.log(`✓ Found ${Object.keys(metadata).length} images in R2`);
+        return metadata;
+    } catch (err) {
+        console.error(`✗ Error querying R2: ${err.message}`);
+        return {};
+    }
+}
+
+async function readImageMetadata() {
     const metadataPath = path.join("src/_data", "imageMetadata.json");
+
+    // If local file exists, use it
     if (fs.existsSync(metadataPath)) {
         return JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
     }
+
+    // If on Cloudflare, generate metadata from R2 bucket
+    if (isCloudflare) {
+        console.log("🔗 Running on Cloudflare Pages, scanning R2 bucket for images...");
+        try {
+            return await generateMetadataFromR2();
+        } catch (err) {
+            console.error(`✗ Failed to generate metadata from R2: ${err.message}`);
+            return {};
+        }
+    }
+
     return {};
 }
 
@@ -27,9 +137,9 @@ function extractFileName(relativePath) {
     return path.basename(relativePath);
 }
 
-function getGalleries() {
+async function getGalleries() {
     const meta = readGlobalMeta();
-    const imageMetadata = readImageMetadata();
+    const imageMetadata = await readImageMetadata();
     let galleries = [];
 
     // Helper function to get images for a gallery
@@ -167,10 +277,12 @@ function groupEventsByMonth(galleries) {
         });
 }
 
-const galleries = getGalleries();
-const eventsByMonth = groupEventsByMonth(galleries);
+module.exports = async () => {
+    const galleries = await getGalleries();
+    const eventsByMonth = groupEventsByMonth(galleries);
 
-module.exports = {
-    galleries,
-    eventsByMonth
+    return {
+        galleries,
+        eventsByMonth
+    };
 };
