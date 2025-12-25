@@ -1,0 +1,8 @@
+name = "auth"
+main = "auth.js"
+compatibility_date = "2024-01-01"
+
+# Routes configuration - uncomment and configure after first deploy
+# routes = [
+#   { pattern = "auth.pbsv.photo/*", zone_name = "pbsv.photo" }
+# ]

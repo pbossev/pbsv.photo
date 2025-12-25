@@ -117,7 +117,7 @@ div:has(> table) {
 }
 
 small {
-    @apply text-zinc-500;
+    @apply text-neutral-500;
 }
 
 ul {
@@ -138,6 +138,10 @@ ul li::before {
     color: var(--green);
 }
 
+.red {
+    color: var(--red);
+}
+
 em,
 strong {
     color: var(--green);
@@ -148,7 +152,7 @@ a:link {
 }
 
 a {
-    @apply text-zinc-300;
+    @apply text-neutral-300;
     text-decoration-color: transparent;
     text-decoration: underline;
     transition: all 0.2s ease;

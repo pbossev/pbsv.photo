@@ -62,20 +62,36 @@ async function processGallery(folder, mode) {
 
     const workers = Array.from({ length: Math.max(2, Math.floor(os.cpus().length / 2)) }, worker);
     await Promise.all(workers);
+
+    return jobs.length;
 }
 
 async function main() {
+    let totalGenerated = 0;
+
     for (let { path: galleriesPath, mode } of basePaths) {
         console.log(`\nProcessing ${mode} galleries in ${galleriesPath}...`);
+
+        // Basic check to ensure path exists to prevent crash
+        if (!fs.existsSync(galleriesPath)) {
+            console.log(`Skipping ${galleriesPath} (not found)`);
+            continue;
+        }
+
         const galleries = fs.readdirSync(galleriesPath);
         for (let gallery of galleries) {
             const galleryDir = path.join(galleriesPath, gallery);
             if (fs.lstatSync(galleryDir).isDirectory()) {
                 console.log(`Processing gallery: ${gallery} (${mode})`);
-                await processGallery(galleryDir, mode);
+                const count = await processGallery(galleryDir, mode);
+                totalGenerated += count;
             }
         }
     }
+
+    console.log("\n========================================");
+    console.log(`Finished! Total new previews generated: ${totalGenerated}`);
+    console.log("========================================");
 }
 
 main().catch(err => {

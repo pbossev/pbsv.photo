@@ -2,11 +2,23 @@
 node_modules/
 _site/
 
-# previews
-src/content/**/*.webp
+# Content (hosted on R2)
+src/content/**/*
+
+# Upload state (internal tracking)
+src/_data/uploadState.json
+
+# Image metadata (contains all R2 URLs, generated at build time)
+src/_data/imageMetadata.json
+src/_data/workerGalleryImages.json
+
+# Gallery passwords (contains actual passwords)
+src/_data/galleryPasswords.json
 
 # Optional npm cache directory
 .npm
 
 # dotenv environment variables file
 .env
+
+.claude

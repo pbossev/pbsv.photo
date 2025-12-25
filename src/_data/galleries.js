@@ -1,52 +1,21 @@
-
 const fs = require("fs");
 const path = require("path");
-const { imageSize } = require("image-size");
-
-function getImageFiles(folderPath) {
-    return fs.readdirSync(folderPath).filter(file => /\.(jpg|jpeg|png)$/i.test(file));
-}
 
 function readGlobalMeta() {
-    const metaPath = path.join("src/content", "meta.json");
+    const metaPath = path.join("src/_data", "galleryMetadata.json");
     if (fs.existsSync(metaPath)) {
         return JSON.parse(fs.readFileSync(metaPath, "utf-8"));
     }
     return { portfolio: [], events: [] };
 }
 
-function getImageMeta(filePath, publicPath) {
-    const buffer = fs.readFileSync(filePath);
-    const { width, height, type } = imageSize(buffer);
-
-    // Try to also load _preview.webp
-    const previewPath = filePath.replace(/\.(jpg|jpeg|png)$/i, "_preview.webp");
-    let previewMeta = null;
-
-    if (fs.existsSync(previewPath)) {
-        try {
-            const previewBuffer = fs.readFileSync(previewPath);
-            const { width: pw, height: ph, type: pt } = imageSize(previewBuffer);
-            previewMeta = {
-                url: publicPath.replace(/\.(jpg|jpeg|png)$/i, "_preview.webp"),
-                width: pw,
-                height: ph,
-                type: pt
-            };
-        } catch (err) {
-            console.warn("Could not read preview image:", previewPath, err);
-        }
+function readImageMetadata() {
+    const metadataPath = path.join("src/_data", "imageMetadata.json");
+    if (fs.existsSync(metadataPath)) {
+        return JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
     }
-
-    return {
-        url: publicPath,
-        width,
-        height,
-        type,
-        preview: previewMeta
-    };
+    return {};
 }
-
 
 function getImageNumber(fileName) {
     // Match first number in the filename
@@ -54,74 +23,109 @@ function getImageNumber(fileName) {
     return match ? parseInt(match[1], 10) : 0;
 }
 
+function extractFileName(relativePath) {
+    return path.basename(relativePath);
+}
+
 function getGalleries() {
-    const baseDir = "src/content";
     const meta = readGlobalMeta();
+    const imageMetadata = readImageMetadata();
     let galleries = [];
 
-    // portfolio
+    // Helper function to get images for a gallery
+    function getImagesForGallery(type, folder, isLocked = false) {
+        const prefix = `${type}/${folder}/`;
+
+        // Find all images matching this gallery
+        const images = Object.entries(imageMetadata)
+            .filter(([key]) => key.startsWith(prefix) && !key.includes("_preview"))
+            .map(([key, data], index) => {
+                if (isLocked) {
+                    // For locked galleries, use placeholder URLs but keep dimensions
+                    // Each image gets a unique ID for client-side replacement
+                    return {
+                        fileName: extractFileName(key),
+                        id: `img-${folder}-${index}`,
+                        url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E",
+                        width: data.width,
+                        height: data.height,
+                        type: data.type,
+                        preview: {
+                            url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E",
+                            width: data.preview.width,
+                            height: data.preview.height,
+                            type: data.preview.type
+                        }
+                    };
+                }
+                return {
+                    fileName: extractFileName(key),
+                    ...data
+                };
+            })
+            .sort((a, b) => getImageNumber(a.fileName) - getImageNumber(b.fileName));
+
+        return images;
+    }
+
+    // Portfolio
     meta.portfolio
-        .filter(entry => entry.visible !== false)
         .forEach(entry => {
-            const folderPath = path.join(baseDir, "portfolio", entry.folder);
-            if (fs.existsSync(folderPath) && fs.lstatSync(folderPath).isDirectory()) {
-                let images = getImageFiles(folderPath);
+            const images = getImagesForGallery("portfolio", entry.folder);
 
-                // Sort images numerically
-                images.sort((a, b) => getImageNumber(a) - getImageNumber(b));
-
-                galleries.push({
-                    type: "portfolio",
-                    path: `/${entry.folder}/`,
-                    images: images.map(file =>
-                        getImageMeta(
-                            path.join(folderPath, file),
-                            `/content/portfolio/${entry.folder}/${file}`
-                        )
-                    ),
-                    title: entry.title,
-                    description: entry.description || "",
-                    preview: entry.preview
-                        ? `/content/portfolio/${entry.folder}/${entry.preview}`
-                        : (images.length > 0
-                            ? `/content/portfolio/${entry.folder}/${images[0]}`
-                            : null)
-                });
+            // Get preview image
+            let previewUrl = null;
+            if (entry.preview) {
+                const previewKey = `portfolio/${entry.folder}/${entry.preview}`;
+                if (imageMetadata[previewKey]) {
+                    previewUrl = imageMetadata[previewKey].url;
+                }
+            } else if (images.length > 0) {
+                previewUrl = images[0].url;
             }
+
+            galleries.push({
+                type: "portfolio",
+                path: `/${entry.folder}/`,
+                images: images,
+                title: entry.title,
+                description: entry.description || "",
+                preview: previewUrl
+            });
         });
 
-    // events
+    // Events
     meta.events
-        .filter(entry => entry.visible !== false)
         .forEach(entry => {
-            const folderPath = path.join(baseDir, "events", entry.folder);
-            if (fs.existsSync(folderPath) && fs.lstatSync(folderPath).isDirectory()) {
-                let images = getImageFiles(folderPath);
+            const isLocked = !!entry.password;
+            const images = getImagesForGallery("events", entry.folder, isLocked);
 
-                // Sort images numerically
-                images.sort((a, b) => getImageNumber(a) - getImageNumber(b));
-
-                galleries.push({
-                    type: "events",
-                    path: `/${entry.folder}/`,
-                    images: images.map(file =>
-                        getImageMeta(
-                            path.join(folderPath, file),
-                            `/content/events/${entry.folder}/${file}`
-                        )
-                    ),
-                    title: entry.title,
-                    short_title: entry.short_title || entry.title,
-                    description: entry.description || "",
-                    location: entry.location || "",
-                    date: entry.date || null,
-                    preview: entry.preview
-                        ? `/content/events/${entry.folder}/${entry.preview}`
-                        : (images.length > 0
-                            ? `/content/events/${entry.folder}/${images[0]}`
-                            : null)
-                });
+            // Get preview image - for locked galleries, use a placeholder
+            let previewUrl = null;
+            if (!isLocked) {
+                if (entry.preview) {
+                    const previewKey = `events/${entry.folder}/${entry.preview}`;
+                    if (imageMetadata[previewKey]) {
+                        previewUrl = imageMetadata[previewKey].url;
+                    }
+                } else if (images.length > 0) {
+                    previewUrl = images[0].url;
+                }
             }
+
+            galleries.push({
+                type: "events",
+                path: `/${entry.folder}/`,
+                images: images, // Include images with placeholder URLs for locked galleries
+                title: entry.title,
+                short_title: entry.short_title || entry.title,
+                description: entry.description || "",
+                location: entry.location || "",
+                date: entry.date || null,
+                preview: previewUrl,
+                locked: isLocked,
+                folder: entry.folder // Include folder for worker API call
+            });
         });
 
     return galleries;
@@ -156,7 +160,7 @@ function groupEventsByMonth(galleries) {
         })
         .sort((a, b) => b.sortKey - a.sortKey)
         .map(({ month, items }) => {
-            // ⭐ ADD THIS LINE TO SORT EVENTS WITHIN THE MONTH
+            // Sort events within the month
             items.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             return { month, items };
@@ -164,7 +168,6 @@ function groupEventsByMonth(galleries) {
 }
 
 const galleries = getGalleries();
-console.log(galleries)
 const eventsByMonth = groupEventsByMonth(galleries);
 
 module.exports = {

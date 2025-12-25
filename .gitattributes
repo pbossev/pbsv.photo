@@ -1,0 +1,2 @@
+src/workers/wrangler.toml filter=ignorelines
+src/workers/auth.js filter=ignorelines

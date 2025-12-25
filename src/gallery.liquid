@@ -11,7 +11,7 @@ eleventyComputed:
 
 <div class="sm:px-20 md:px-32 lg:mx-auto lg:max-w-4xl xl:max-w-6xl 2xl:max-w-6xl mb-4">
   {% if gallery.type == "events" %}
-    <a class="text-zinc-500 text-sm no-underline" href="/events">← Events 📜</a>
+    <a class="text-neutral-500 text-sm no-underline" href="/galleries">← Galleries 📸</a>
   {% else %}
     {% include "_back.liquid" %}
   {% endif %}
@@ -23,24 +23,139 @@ eleventyComputed:
   {% endif %}
 </div>
 
+{% if gallery.locked %}
+  <!-- Password Protection Overlay -->
+  <div
+    id="passwordOverlay"
+    class="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center"
+    onclick="if(event.target === event.currentTarget) window.location.href = '/galleries/';">
+    <div class="bg-neutral-900 border border-neutral-700 p-8 max-w-md w-full mx-4 relative">
+      <h2 class="text-2xl mb-4 text-white">🔒 Protected Gallery</h2>
+      <p class="text-neutral-400 mb-6">This gallery is password protected. Please enter the password to view.</p>
+      <div class="relative">
+        <input
+          type="text"
+          id="galleryPassword"
+          placeholder="Enter password"
+          class="w-full px-4 py-2 pr-12 bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:border-neutral-500"
+          onkeypress="if(event.key==='Enter') unlockGallery()" />
+        <button onclick="unlockGallery()" class="absolute right-0 top-0 h-full aspect-square bg-white text-black border-l border-neutral-700 hover:bg-neutral-200 transition-colors flex items-center justify-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="w-5 h-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+      <div id="passwordError" class="red text-sm hidden"></div>
+    </div>
+  </div>
+
+  <script>
+      const WORKER_API = 'https://auth.pbsv.photo';
+      const GALLERY_FOLDER = '{{ gallery.folder }}';
+      const GALLERY_PATH = '{{ gallery.path }}';
+      let galleryImagesData = [];
+
+      async function unlockGallery() {
+    const password = document.getElementById('galleryPassword').value;
+    const errorDiv = document.getElementById('passwordError');
+
+    if (!password) {
+      errorDiv.textContent = 'Please enter a password';
+      errorDiv.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const response = await fetch(WORKER_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, galleryPath: GALLERY_FOLDER })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Store in session storage
+        sessionStorage.setItem('gallery-unlocked-' + GALLERY_PATH, 'true');
+        sessionStorage.setItem('gallery-images-' + GALLERY_PATH, JSON.stringify(data.images));
+
+        // Replace placeholder URLs with real URLs
+        replaceImageUrls(data.images);
+
+        // Hide overlay
+        document.getElementById('passwordOverlay').classList.add('hidden');
+      } else {
+        errorDiv.textContent = data.error || 'Incorrect password';
+        errorDiv.classList.remove('hidden');
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      errorDiv.textContent = 'Failed to authenticate. Please try again.';
+      errorDiv.classList.remove('hidden');
+    }
+      }
+
+      function replaceImageUrls(urls) {
+      // Target all gallery images regardless of layout
+      const galleryItems = document.querySelectorAll('.gallery-img');
+
+      urls.forEach((url, index) => {
+    if (galleryItems[index]) {
+      // Derive preview URL by replacing extension with _preview.webp
+      const previewUrl = url.replace(/\.(jpg|jpeg|png)$/i, '_preview.webp');
+
+      // Update the src to load the preview image
+      galleryItems[index].src = previewUrl;
+      // Update the onclick to pass the real URL to the lightbox
+      galleryItems[index].setAttribute('onclick', `openLightbox('${url}', ${index})`);
+    }
+      });
+
+      // Update the global galleryImages array used for lightbox navigation
+      galleryImages = urls;
+    }
+
+      // Check if already unlocked in this session (wait for DOM)
+      document.addEventListener('DOMContentLoaded', () => {
+    const cachedImages = sessionStorage.getItem('gallery-images-' + GALLERY_PATH);
+    if (cachedImages) {
+      const imagesData = JSON.parse(cachedImages);
+      replaceImageUrls(imagesData);
+      document.getElementById('passwordOverlay').classList.add('hidden');
+    }
+      });
+  </script>
+{% endif %}
+
 {% if gallery.type == "events" %}
   <section class="gallery flex flex-wrap">
     {% assign image_index = 0 %}
     {% for img in gallery.images %}
-      {% unless img.url contains '_preview' %}
-        <div class="gallery-item relative m-0.5">
-          <i class="block bg-zinc-800" style="padding-bottom:{{ img.height | times: 100 | divided_by: img.width }}%"></i>
-          <img
-            src="{{ img.preview.url }}"
-            alt="{{ gallery.title }}"
-            loading="lazy"
-            class="absolute top-0 w-full h-auto object-cover cursor-pointer"
-            onclick="openLightbox('{{ img.url }}', {{ image_index }})"
-            data-width="{{ img.width }}"
-            data-height="{{ img.height }}" />
-        </div>
-        {% assign image_index = image_index | plus: 1 %}
-      {% endunless %}
+      <div class="gallery-item relative m-0.5">
+        <i class="block bg-neutral-800" style="padding-bottom:{{ img.height | times: 100 | divided_by: img.width }}%"></i>
+        <img
+          {% if img.id %}
+          id="{{ img.id }}"
+          {% endif %}
+          src="{{ img.preview.url }}"
+          alt="{{ gallery.title }}"
+          loading="lazy"
+          class="gallery-img absolute top-0 w-full h-auto object-cover cursor-pointer hover:brightness-75 transition-filter duration-200"
+          {% if gallery.locked %}
+          onclick=""
+          {% else %}
+          onclick="openLightbox('{{ img.url }}', {{ image_index }})"
+          {% endif %}
+          data-width="{{ img.width }}"
+          data-height="{{ img.height }}" />
+      </div>
+      {% assign image_index = image_index | plus: 1 %}
     {% endfor %}
   </section>
 
@@ -93,12 +208,15 @@ eleventyComputed:
   <div class="columns-2 xl:columns-3 gap-1 space-y-1">
     {% assign image_index = 0 %}
     {% for img in gallery.images %}
-      <img
-        src="{{ img.preview.url }}"
-        alt="{{ gallery.title }}"
-        loading="lazy"
-        class="w-full h-auto cursor-pointer hover:brightness-75 transition-filter duration-200"
-        onclick="openLightbox('{{ img.url }}', {{ image_index }})" />
+      <div class="relative break-inside-avoid mb-1">
+        <i class="block bg-neutral-800" style="padding-bottom:{{ img.height | times: 100 | divided_by: img.width }}%"></i>
+        <img
+          src="{{ img.preview.url }}"
+          alt="{{ gallery.title }}"
+          loading="lazy"
+          class="gallery-img absolute top-0 w-full h-auto cursor-pointer hover:brightness-75 transition-filter duration-200"
+          onclick="openLightbox('{{ img.url }}', {{ image_index }})" />
+      </div>
       {% assign image_index = image_index | plus: 1 %}
     {% endfor %}
   </div>
@@ -256,14 +374,16 @@ eleventyComputed:
   let lastTranslateY = 0;
   const preloadedImages = new Map();
 
+  {% if gallery.locked %}
+  let galleryImages = [];
+  {% else %}
   const galleryImages = [
     {% assign image_index = 0 %}
     {% for img in gallery.images %}
-      {% unless img.url contains '_preview' %}
-        "{{ img.url }}"{% unless forloop.last %},{% endunless %}
-      {% endunless %}
+      "{{ img.url }}"{% unless forloop.last %},{% endunless %}
     {% endfor %}
   ];
+  {% endif %}
 
   function preloadImage(src) {
     if (preloadedImages.has(src)) return;

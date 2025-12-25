@@ -1,0 +1,154 @@
+---
+layout: base
+permalink: /galleries/
+title: Galleries 📸
+---
+
+<div>
+  {% include "_back.liquid" %}
+
+  <div class="flex justify-center items-center my-2">
+    <h1>All Galleries</h1>
+  </div>
+</div>
+
+<div class="flex flex-col space-y-4">
+  {% for group in galleries.eventsByMonth %}
+    <div class="space-y-2">
+      <h2>
+        {{ group.month }}
+      </h2>
+
+      <div>
+        {% for event in group.items %}
+          <div class="flex flex-row justify-between">
+            <div class=" flex flex-row gap-x-4">
+              <p class="text-neutral-400">{{ event.formattedDate }}</p>
+              <a
+                href="{{ event.path }}"
+                {% if event.locked %}
+                onclick="return handleLockedGalleryClick(event, '{{ event.path }}')"
+                {% endif %}>
+                {% if event.locked %}
+                  <span class="text-neutral-500">🔒</span>
+                {% endif %}
+                <span class="hidden xl:inline">{{ event.title }}</span>
+                <span class="inline xl:hidden">{{ event.short_title }}</span>
+
+              </a>
+            </div>
+            <p class="text-neutral-400 lg:block hidden">{{ event.location }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+
+<!-- Password Modal -->
+<div
+  id="passwordModal"
+  class="fixed inset-0 bg-black/50 z-[9999] hidden items-center justify-center"
+  onclick="if(event.target === event.currentTarget) closePasswordModal();">
+  <div class="bg-neutral-900 border border-neutral-700 p-8 max-w-md w-full mx-4 relative">
+    <h2 class="text-2xl mb-4 text-white">🔒 Protected Gallery</h2>
+    <p class="text-neutral-400 mb-6">This gallery is password protected. Please enter the password to view.</p>
+    <div class="relative">
+      <input
+        type="text"
+        id="modalPassword"
+        placeholder="Enter password"
+        class="w-full px-4 py-2 pr-12 bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:border-neutral-500"
+        onkeypress="if(event.key==='Enter') submitModalPassword()" />
+      <button onclick="submitModalPassword()" class="absolute right-0 top-0 h-full aspect-square bg-white text-black border-l border-neutral-700 hover:bg-neutral-200 transition-colors flex items-center justify-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="w-5 h-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+    <div id="modalPasswordError" class="red text-sm hidden"></div>
+  </div>
+</div>
+
+<script>
+  const WORKER_API = 'https://auth.pbsv.photo';
+  let currentGalleryPath = '';
+
+  function openPasswordModal() {
+    const modal = document.getElementById('passwordModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.getElementById('modalPassword').focus();
+  }
+
+  function handleLockedGalleryClick(event, galleryPath) {
+    event.preventDefault();
+
+    // Check if already unlocked in this session
+    if (sessionStorage.getItem('gallery-unlocked-' + galleryPath)) {
+      window.location.href = galleryPath;
+      return;
+    }
+
+    currentGalleryPath = galleryPath;
+
+    const modal = document.getElementById('passwordModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.getElementById('modalPassword').focus();
+  }
+
+  function closePasswordModal() {
+    const modal = document.getElementById('passwordModal');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+    document.getElementById('modalPassword').value = '';
+    document.getElementById('modalPasswordError').classList.add('hidden');
+  }
+
+  async function submitModalPassword() {
+    const password = document.getElementById('modalPassword').value;
+    const errorDiv = document.getElementById('modalPasswordError');
+
+    if (!password) {
+      errorDiv.textContent = 'Please enter a password';
+      errorDiv.classList.remove('hidden');
+      return;
+    }
+
+    // Extract gallery folder from path (remove leading/trailing slashes)
+    const galleryFolder = currentGalleryPath.replace(/^\/|\/$/g, '');
+
+    try {
+      const response = await fetch(WORKER_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, galleryPath: galleryFolder })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Store unlock status and images in session
+        sessionStorage.setItem('gallery-unlocked-' + currentGalleryPath, 'true');
+        sessionStorage.setItem('gallery-images-' + currentGalleryPath, JSON.stringify(data.images));
+        // Navigate to gallery
+        window.location.href = currentGalleryPath;
+      } else {
+        errorDiv.textContent = data.error || 'Incorrect password';
+        errorDiv.classList.remove('hidden');
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      errorDiv.textContent = 'Failed to authenticate. Please try again.';
+      errorDiv.classList.remove('hidden');
+    }
+  }
+</script>
