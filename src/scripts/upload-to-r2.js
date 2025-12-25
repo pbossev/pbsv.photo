@@ -240,6 +240,13 @@ function scanLocalFiles() {
     return files;
 }
 
+// Helper: Embed dimensions into the image key
+function embedDimensionsInKey(relativePath, width, height) {
+    const ext = path.extname(relativePath);
+    const nameWithoutExt = relativePath.slice(0, -ext.length);
+    return `${nameWithoutExt}__w${width}h${height}${ext}`;
+}
+
 // Process single file upload
 async function processUpload(fileInfo, allMetadata, galleryMeta) {
     const { fullPath, relativePath, type, isNew, standalone } = fileInfo;
@@ -248,27 +255,31 @@ async function processUpload(fileInfo, allMetadata, galleryMeta) {
     const originalBuffer = fs.readFileSync(fullPath);
     const originalDimensions = getImageDimensions(originalBuffer);
 
-    // Upload original
-    const originalKey = relativePath;
-    await uploadToR2(originalKey, originalBuffer, getContentType(fullPath));
-    console.log(`  ↑ Uploaded: ${originalKey} (${formatBytes(originalBuffer.length)})`);
+    // Embed dimensions in the key
+    const originalKeyWithDims = embedDimensionsInKey(relativePath, originalDimensions.width, originalDimensions.height);
+    await uploadToR2(originalKeyWithDims, originalBuffer, getContentType(fullPath));
+    console.log(`  ↑ Uploaded: ${originalKeyWithDims} (${formatBytes(originalBuffer.length)})`);
 
     // Generate and upload preview (for standalone images, use portfolio sizing)
     const previewType = standalone ? "portfolio" : type;
     const previewBuffer = await generatePreview(fullPath, previewType);
     const previewDimensions = getImageDimensions(previewBuffer);
-    const previewKey = relativePath.replace(/\.(jpg|jpeg|png)$/i, "_preview.webp");
-    await uploadToR2(previewKey, previewBuffer, "image/webp");
-    console.log(`  ↑ Uploaded: ${previewKey} (${formatBytes(previewBuffer.length)})`);
+    const previewKeyWithDims = embedDimensionsInKey(
+        relativePath.replace(/\.(jpg|jpeg|png)$/i, "_preview.webp"),
+        previewDimensions.width,
+        previewDimensions.height
+    );
+    await uploadToR2(previewKeyWithDims, previewBuffer, "image/webp");
+    console.log(`  ↑ Uploaded: ${previewKeyWithDims} (${formatBytes(previewBuffer.length)})`);
 
     // Create metadata object
     const metadataObj = {
-        url: `${PUBLIC_URL}/${originalKey}`,
+        url: `${PUBLIC_URL}/${originalKeyWithDims}`,
         width: originalDimensions.width,
         height: originalDimensions.height,
         type: originalDimensions.type,
         preview: {
-            url: `${PUBLIC_URL}/${previewKey}`,
+            url: `${PUBLIC_URL}/${previewKeyWithDims}`,
             width: previewDimensions.width,
             height: previewDimensions.height,
             type: previewDimensions.type,
@@ -278,7 +289,7 @@ async function processUpload(fileInfo, allMetadata, galleryMeta) {
     // Determine if this belongs to a password-protected gallery
     const isProtected = isProtectedGallery(relativePath, galleryMeta);
 
-    // Store all images in single metadata file
+    // Store all images in single metadata file using the original path as key
     allMetadata[relativePath] = metadataObj;
 
     if (isProtected) {
@@ -351,10 +362,23 @@ async function main() {
     }
 
     // Find files to delete from R2
-    const localKeysWithPreviews = new Set([
-        ...localFiles.map(f => f.relativePath),
-        ...localFiles.map(f => f.relativePath.replace(/\.(jpg|jpeg|png)$/i, "_preview.webp"))
-    ]);
+    // Build a set of expected keys with embedded dimensions
+    const localKeysWithPreviews = new Set();
+    for (const file of localFiles) {
+        const metadata = newMetadata[file.relativePath] || allMetadata[file.relativePath];
+        if (metadata) {
+            // Extract keys from URLs (they have embedded dimensions)
+            const originalUrl = metadata.url;
+            const previewUrl = metadata.preview.url;
+
+            // Extract key from URL (everything after the domain)
+            const originalKey = originalUrl.replace(`${PUBLIC_URL}/`, "");
+            const previewKey = previewUrl.replace(`${PUBLIC_URL}/`, "");
+
+            localKeysWithPreviews.add(originalKey);
+            localKeysWithPreviews.add(previewKey);
+        }
+    }
 
     console.log("\nFetching R2 object list...");
     const r2Objects = await listR2Objects();

@@ -16,6 +16,33 @@ function readGlobalMeta() {
     return { portfolio: [], events: [] };
 }
 
+// Helper: Extract dimensions from embedded key format
+// Keys are in format: "path/to/image__w1920h1080.jpg"
+function extractDimensionsFromKey(key) {
+    const match = key.match(/__w(\d+)h(\d+)\./);
+    if (match) {
+        return {
+            width: parseInt(match[1], 10),
+            height: parseInt(match[2], 10)
+        };
+    }
+    return null;
+}
+
+// Helper: Extract original path from key with embedded dimensions
+// Converts "portfolio/astro/1__w3285h4928.jpg" back to "portfolio/astro/1.jpg"
+function extractOriginalPathFromKey(key) {
+    return key.replace(/__w\d+h\d+/, "");
+}
+
+// Helper: Extract base path for matching (without dimensions and without _preview)
+// Used to associate preview files with their original images
+// "portfolio/astro/1__w3285h4928.jpg" → "portfolio/astro/1.jpg"
+// "portfolio/astro/1__w800h1200_preview.webp" → "portfolio/astro/1_preview.webp"
+function extractBasePath(key) {
+    return key.replace(/__w\d+h\d+/, "");
+}
+
 // Query R2 bucket and generate metadata from objects
 async function generateMetadataFromR2() {
     if (!process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
@@ -34,6 +61,7 @@ async function generateMetadataFromR2() {
     });
 
     const metadata = {};
+    const previewKeys = {};
     let continuationToken = undefined;
 
     console.log("📥 Querying R2 bucket for images...");
@@ -56,43 +84,52 @@ async function generateMetadataFromR2() {
                         continue;
                     }
 
-                    // Skip preview files for now, we'll pair them later
+                    // Handle preview files separately
                     if (key.includes("_preview")) {
+                        const basePath = extractBasePath(key);
+                        const dimensions = extractDimensionsFromKey(key);
+                        if (dimensions) {
+                            previewKeys[basePath] = {
+                                key: key,
+                                width: dimensions.width,
+                                height: dimensions.height,
+                                type: "webp"
+                            };
+                        }
                         continue;
                     }
 
-                    // Get object metadata to extract dimensions
-                    try {
-                        const headResponse = await r2Client.send(
-                            new HeadObjectCommand({
-                                Bucket: "photos",
-                                Key: key,
-                            })
-                        );
-
-                        // Extract dimensions from metadata (if stored) or use defaults
-                        const width = headResponse.Metadata?.width ? parseInt(headResponse.Metadata.width) : null;
-                        const height = headResponse.Metadata?.height ? parseInt(headResponse.Metadata.height) : null;
-                        const type = key.match(/\.(\w+)$/i)?.[1]?.toLowerCase() || "jpg";
-
-                        // Build corresponding preview key
-                        const previewKey = key.replace(/\.(jpg|jpeg|png)$/i, "_preview.webp");
-
-                        metadata[key] = {
-                            url: `${PUBLIC_URL}/${key}`,
-                            width: width,
-                            height: height,
-                            type: type,
-                            preview: {
-                                url: `${PUBLIC_URL}/${previewKey}`,
-                                width: null,  // Preview dimensions would need to be extracted too
-                                height: null,
-                                type: "webp"
-                            }
-                        };
-                    } catch (err) {
-                        console.warn(`⚠ Failed to get metadata for ${key}: ${err.message}`);
+                    // Extract dimensions from embedded key
+                    const dimensions = extractDimensionsFromKey(key);
+                    if (!dimensions) {
+                        console.warn(`⚠ Could not extract dimensions from key: ${key}`);
+                        continue;
                     }
+
+                    const originalPath = extractOriginalPathFromKey(key);
+                    const basePath = extractBasePath(key);
+                    const type = key.match(/\.(\w+)$/i)?.[1]?.toLowerCase() || "jpg";
+
+                    // Get preview info if available
+                    const previewInfo = previewKeys[basePath];
+
+                    metadata[originalPath] = {
+                        url: `${PUBLIC_URL}/${key}`,
+                        width: dimensions.width,
+                        height: dimensions.height,
+                        type: type,
+                        preview: previewInfo ? {
+                            url: `${PUBLIC_URL}/${previewInfo.key}`,
+                            width: previewInfo.width,
+                            height: previewInfo.height,
+                            type: previewInfo.type
+                        } : {
+                            url: null,
+                            width: null,
+                            height: null,
+                            type: "webp"
+                        }
+                    };
                 }
             }
 
@@ -117,9 +154,19 @@ async function readImageMetadata() {
 
     // If on Cloudflare, generate metadata from R2 bucket
     if (isCloudflare) {
-        console.log("🔗 Running on Cloudflare Pages, scanning R2 bucket for images...");
+        console.log("🔗 Running on Cloudflare Pages, generating imageMetadata.json from R2 bucket...");
         try {
-            return await generateMetadataFromR2();
+            const metadata = await generateMetadataFromR2();
+
+            // Save generated metadata to file
+            const dir = path.dirname(metadataPath);
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+            console.log(`✓ Saved generated imageMetadata.json with ${Object.keys(metadata).length} images`);
+
+            return metadata;
         } catch (err) {
             console.error(`✗ Failed to generate metadata from R2: ${err.message}`);
             return {};
