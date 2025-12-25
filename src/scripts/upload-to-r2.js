@@ -20,11 +20,11 @@ const CONCURRENCY = Math.max(4, os.cpus().length); // Parallel uploads
 console.log("Initializing R2 client...");
 const r2Client = new S3Client({
     region: "auto",
-    endpoint: process.env.ENDPOINT,
+    endpoint: process.env.R2_ENDPOINT,
     forcePathStyle: true,
     credentials: {
-        accessKeyId: process.env.ACCESS_KEY_ID,
-        secretAccessKey: process.env.SECRET_ACCESS_KEY,
+        accessKeyId: process.env.R2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
     },
 });
 
