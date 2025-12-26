@@ -101,29 +101,47 @@ eleventyComputed:
     }
       }
 
-      function replaceImageUrls(images) {
-      // Target all gallery images by ID to ensure correct matching
-      images.forEach((imgData, index) => {
-        const imgId = `img-{{ gallery.folder }}-${index}`;
-        const imgElement = document.getElementById(imgId);
-
-        if (imgElement) {
-          // Handle both old format (string) and new format (object with url/preview)
-          const imageUrl = typeof imgData === 'string' ? imgData : imgData.url;
-          const previewUrl = typeof imgData === 'string'
-            ? imgData.replace(/__w\d+h\d+/, '').replace(/\.(jpg|jpeg|png)$/i, '_preview.webp')
-            : imgData.preview;
-
-          // Update the src to load the preview image
-          imgElement.src = previewUrl;
-          // Update the onclick to pass the real URL to the lightbox
-          imgElement.setAttribute('onclick', `openLightbox('${imageUrl}', ${index})`);
+      // Hash function for matching (must match server-side hash)
+      function hashFilename(filename) {
+        let hash = 0;
+        for (let i = 0; i < filename.length; i++) {
+          const char = filename.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash;
         }
-      });
+        return Math.abs(hash).toString(16).padStart(8, '0').slice(0, 8);
+      }
 
-      // Update the global galleryImages array used for lightbox navigation (extract just URLs)
-      galleryImages = images.map(img => typeof img === 'string' ? img : img.url);
-    }
+      function replaceImageUrls(images) {
+        // Create hash map from auth response
+        const imagesByHash = {};
+        images.forEach((imgData) => {
+          const imageUrl = typeof imgData === 'string' ? imgData : imgData.url;
+          const fileName = imageUrl.split('/').pop().split('__')[0] + '.' + imageUrl.split('.').pop();
+          const hash = hashFilename(fileName);
+          imagesByHash[hash] = imgData;
+        });
+
+        // Match gallery images by hash
+        const galleryItems = document.querySelectorAll('.gallery-img');
+        galleryItems.forEach((img, index) => {
+          const hash = img.getAttribute('data-hash');
+          const imgData = imagesByHash[hash];
+
+          if (imgData) {
+            const imageUrl = typeof imgData === 'string' ? imgData : imgData.url;
+            const previewUrl = typeof imgData === 'string'
+              ? imgData.replace(/__w\d+h\d+/, '').replace(/\.(jpg|jpeg|png)$/i, '_preview.webp')
+              : imgData.preview;
+
+            img.src = previewUrl;
+            img.setAttribute('onclick', `openLightbox('${imageUrl}', ${index})`);
+          }
+        });
+
+        // Update the global galleryImages array used for lightbox navigation (extract just URLs)
+        galleryImages = images.map(img => typeof img === 'string' ? img : img.url);
+      }
 
       // Check if already unlocked in this session (wait for DOM)
       document.addEventListener('DOMContentLoaded', () => {
@@ -157,7 +175,8 @@ eleventyComputed:
           onclick="openLightbox('{{ img.url }}', {{ image_index }})"
           {% endif %}
           data-width="{{ img.width }}"
-          data-height="{{ img.height }}" />
+          data-height="{{ img.height }}"
+          data-hash="{{ img.hash }}" />
       </div>
       {% assign image_index = image_index | plus: 1 %}
     {% endfor %}

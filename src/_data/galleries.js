@@ -9,6 +9,17 @@ const PUBLIC_URL = "https://r2.pbsv.photo";
 
 console.log(`🔍 Loading galleries data (Cloudflare: ${isCloudflare})`);
 
+// Hash function for generating stable 8-character hash from filename
+function hashFilename(filename) {
+    let hash = 0;
+    for (let i = 0; i < filename.length; i++) {
+        const char = filename.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(16).padStart(8, '0').slice(0, 8);
+}
+
 function readGlobalMeta() {
     const metaPath = path.join("src/_data", "galleryMetadata.json");
     if (fs.existsSync(metaPath)) {
@@ -224,7 +235,10 @@ async function generateMetadataFromR2() {
         let matchedPreviews = 0;
 
         for (const [originalPath, originalData] of Object.entries(originals)) {
-            const previewData = previews[originalData.basePath];
+            // Construct the preview key by converting the original basePath to preview format
+            // e.g., "portfolio/astro/1.jpg" -> "portfolio/astro/1_preview.webp"
+            const previewKey = originalData.basePath.replace(/\.(jpg|jpeg|png)$/i, '_preview.webp');
+            const previewData = previews[previewKey];
 
             if (previewData) {
                 matchedPreviews++;
@@ -266,40 +280,24 @@ async function generateMetadataFromR2() {
 }
 
 async function readImageMetadata() {
-    const metadataPath = path.join("src/_data", "imageMetadata.json");
-
-    // Priority 1: If local metadata file exists, use it (fastest)
-    if (fs.existsSync(metadataPath)) {
-        console.log("📄 Using cached imageMetadata.json");
-        return JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
-    }
-
-    // Priority 2: If on Cloudflare, generate metadata from R2 bucket
+    // On Cloudflare Pages: generate from R2 directly, no file I/O
     if (isCloudflare) {
         console.log("☁️ Running on Cloudflare Pages, generating metadata from R2...");
         try {
-            const metadata = await generateMetadataFromR2();
-
-            // Optionally save to disk (though it might not persist in CF Pages)
-            try {
-                const dir = path.dirname(metadataPath);
-                if (!fs.existsSync(dir)) {
-                    fs.mkdirSync(dir, { recursive: true });
-                }
-                fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
-                console.log(`✓ Saved generated imageMetadata.json`);
-            } catch (writeErr) {
-                console.warn(`⚠ Could not save metadata file (expected on CF Pages): ${writeErr.message}`);
-            }
-
-            return metadata;
+            return await generateMetadataFromR2();
         } catch (err) {
             console.error(`✗ Failed to generate metadata from R2: ${err.message}`);
             throw err;
         }
     }
 
-    // Priority 3: Local development - read from filesystem
+    // Local development: check for cached file, otherwise read from filesystem
+    const metadataPath = path.join("src/_data", "imageMetadata.json");
+    if (fs.existsSync(metadataPath)) {
+        console.log("📄 Using cached imageMetadata.json");
+        return JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
+    }
+
     console.log("💻 Local development mode, reading from filesystem...");
     return await generateMetadataFromLocalFiles();
 }
@@ -324,15 +322,13 @@ async function getGalleries() {
         const prefix = `${type}/${folder}/`;
 
         // Find all images matching this gallery
-        const images = Object.entries(imageMetadata)
+        let images = Object.entries(imageMetadata)
             .filter(([key]) => key.startsWith(prefix) && !key.includes("_preview"))
-            .map(([key, data], index) => {
+            .map(([key, data]) => {
                 if (isLocked) {
                     // For locked galleries, use placeholder URLs but keep dimensions
-                    // Each image gets a unique ID for client-side replacement
                     return {
                         fileName: extractFileName(key),
-                        id: `img-${folder}-${index}`,
                         url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E",
                         width: data.width,
                         height: data.height,
@@ -351,6 +347,13 @@ async function getGalleries() {
                 };
             })
             .sort((a, b) => getImageNumber(a.fileName) - getImageNumber(b.fileName));
+
+        // Assign hashes AFTER sorting to ensure stable matching
+        images = images.map((img, index) => ({
+            ...img,
+            id: `img-${folder}-${index}`,
+            hash: hashFilename(img.fileName)
+        }));
 
         return images;
     }
