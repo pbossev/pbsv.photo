@@ -6,7 +6,7 @@ const METADATA_FILE = path.join(__dirname, "..", "_data", "imageMetadata.json");
 const OUTPUT_FILE = path.join(__dirname, "..", "_data", "workerGalleryImages.json");
 const GALLERY_META_FILE = path.join(__dirname, "..", "_data", "galleryMetadata.json");
 const GALLERY_PASSWORDS_FILE = path.join(__dirname, "..", "_data", "galleryPasswords.json");
-const AUTH_FILE = path.join(__dirname, "..", "..", "functions", "api", "auth.js");
+const AUTH_FILE = path.join(__dirname, "..", "workers", "auth.js");
 
 function loadGalleryMetadata() {
     if (fs.existsSync(GALLERY_META_FILE)) {

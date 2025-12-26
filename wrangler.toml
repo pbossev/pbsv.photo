@@ -1,0 +1,32 @@
+name = "pbsv-photo"
+type = "javascript"
+main = "src/index.js"
+
+# Build configuration
+[build]
+command = "npm run build"
+cwd = "./"
+watch_paths = ["src/**/*.{js,liquid,css,json}"]
+
+# Environment variables (development)
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+# KV Namespace binding for gallery authentication rate limiting
+[[kv_namespaces]]
+binding = "GALLERY_AUTH_KV"
+id = "REPLACE_WITH_YOUR_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_YOUR_PREVIEW_ID"
+
+# Production environment (Cloudflare Pages uses this by default)
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[[env.production.kv_namespaces]]
+binding = "GALLERY_AUTH_KV"
+id = "REPLACE_WITH_YOUR_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_YOUR_PREVIEW_ID"
+
+# Observability
+[observability]
+enabled = false
