@@ -15,6 +15,9 @@ src/_data/workerGalleryImages.json
 # Gallery passwords (contains actual passwords)
 src/_data/galleryPasswords.json
 
+# Worker auth file (contains passwords and URLs, generated locally)
+src/workers/auth.js
+
 # Optional npm cache directory
 .npm
 

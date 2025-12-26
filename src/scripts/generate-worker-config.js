@@ -6,7 +6,7 @@ const METADATA_FILE = path.join(__dirname, "..", "_data", "imageMetadata.json");
 const OUTPUT_FILE = path.join(__dirname, "..", "_data", "workerGalleryImages.json");
 const GALLERY_META_FILE = path.join(__dirname, "..", "_data", "galleryMetadata.json");
 const GALLERY_PASSWORDS_FILE = path.join(__dirname, "..", "_data", "galleryPasswords.json");
-const AUTH_FILE = path.join(__dirname, "..", "workers", "auth.js");
+const AUTH_FILE = path.join(__dirname, "..", "..", "functions", "api", "auth.js");
 
 function loadGalleryMetadata() {
     if (fs.existsSync(GALLERY_META_FILE)) {
@@ -116,11 +116,14 @@ function generate() {
         }
 
         // Store key for sorting, but we will discard it later
-        galleries[folder].push({ key, url: data.url });
+        galleries[folder].push({
+            key,
+            url: data.url,
+            preview: data.preview.url
+        });
     }
 
     // Sort each gallery by the numeric part of the filename to match Liquid order
-    // and map to a simple array of strings (URLs)
     for (const folder in galleries) {
         galleries[folder].sort((a, b) => {
             const aNum = parseInt(a.key.match(/\/(\d+)\./)?.[1] || '0');
@@ -128,8 +131,11 @@ function generate() {
             return aNum - bNum;
         });
 
-        // Final transformation: array of strings instead of objects
-        galleries[folder] = galleries[folder].map(item => item.url);
+        // Final transformation: array of objects with url and preview
+        galleries[folder] = galleries[folder].map(item => ({
+            url: item.url,
+            preview: item.preview
+        }));
     }
 
     // Save the grouped data and update auth.js

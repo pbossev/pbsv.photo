@@ -56,7 +56,7 @@ eleventyComputed:
   </div>
 
   <script>
-      const WORKER_API = 'https://auth.pbsv.photo';
+      const WORKER_API = '/api/auth';
       const GALLERY_FOLDER = '{{ gallery.folder }}';
       const GALLERY_PATH = '{{ gallery.path }}';
       let galleryImagesData = [];
@@ -101,24 +101,28 @@ eleventyComputed:
     }
       }
 
-      function replaceImageUrls(urls) {
-      // Target all gallery images regardless of layout
-      const galleryItems = document.querySelectorAll('.gallery-img');
+      function replaceImageUrls(images) {
+      // Target all gallery images by ID to ensure correct matching
+      images.forEach((imgData, index) => {
+        const imgId = `img-{{ gallery.folder }}-${index}`;
+        const imgElement = document.getElementById(imgId);
 
-      urls.forEach((url, index) => {
-    if (galleryItems[index]) {
-      // Derive preview URL by replacing extension with _preview.webp
-      const previewUrl = url.replace(/\.(jpg|jpeg|png)$/i, '_preview.webp');
+        if (imgElement) {
+          // Handle both old format (string) and new format (object with url/preview)
+          const imageUrl = typeof imgData === 'string' ? imgData : imgData.url;
+          const previewUrl = typeof imgData === 'string'
+            ? imgData.replace(/__w\d+h\d+/, '').replace(/\.(jpg|jpeg|png)$/i, '_preview.webp')
+            : imgData.preview;
 
-      // Update the src to load the preview image
-      galleryItems[index].src = previewUrl;
-      // Update the onclick to pass the real URL to the lightbox
-      galleryItems[index].setAttribute('onclick', `openLightbox('${url}', ${index})`);
-    }
+          // Update the src to load the preview image
+          imgElement.src = previewUrl;
+          // Update the onclick to pass the real URL to the lightbox
+          imgElement.setAttribute('onclick', `openLightbox('${imageUrl}', ${index})`);
+        }
       });
 
-      // Update the global galleryImages array used for lightbox navigation
-      galleryImages = urls;
+      // Update the global galleryImages array used for lightbox navigation (extract just URLs)
+      galleryImages = images.map(img => typeof img === 'string' ? img : img.url);
     }
 
       // Check if already unlocked in this session (wait for DOM)

@@ -12,6 +12,7 @@
     "build:previews": "node src/scripts/generate-previews.js",
     "build:css": "tailwindcss -i src/assets/css/style.css -o _site/assets/css/style.css --minify",
     "upload": "node src/scripts/upload-to-r2.js",
+    "list-photos": "node src/scripts/list-r2-photos.js",
     "worker:config": "node src/scripts/generate-worker-config.js",
     "worker:deploy": "cd src/workers && npx wrangler deploy && cd ../..",
     "worker:run": "run-s worker:config worker:deploy"

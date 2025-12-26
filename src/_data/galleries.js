@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { S3Client, ListObjectsV2Command, HeadObjectCommand } = require("@aws-sdk/client-s3");
+const { imageSize } = require("image-size");
 require("dotenv").config();
 
 const isCloudflare = !!process.env.CF_PAGES;
@@ -43,11 +44,98 @@ function extractBasePath(key) {
     return key.replace(/__w\d+h\d+/, "");
 }
 
+// Generate metadata from local filesystem
+async function generateMetadataFromLocalFiles() {
+    const metadata = {};
+    const CONTENT_DIR = path.join(__dirname, "..", "content");
+
+    console.log("📁 Reading images from local filesystem...");
+
+    const types = ["portfolio", "events"];
+
+    for (const type of types) {
+        const typeDir = path.join(CONTENT_DIR, type);
+        if (!fs.existsSync(typeDir)) continue;
+
+        const galleries = fs.readdirSync(typeDir);
+
+        for (const gallery of galleries) {
+            const galleryDir = path.join(typeDir, gallery);
+            if (!fs.lstatSync(galleryDir).isDirectory()) continue;
+
+            const files = fs.readdirSync(galleryDir);
+
+            // Filter images (exclude previews)
+            const images = files.filter(f =>
+                /\.(jpg|jpeg|png)$/i.test(f) && !f.includes("_preview")
+            );
+
+            for (const image of images) {
+                const imagePath = path.join(galleryDir, image);
+                const relativePath = path.relative(CONTENT_DIR, imagePath).replace(/\\/g, "/");
+
+                try {
+                    // Get dimensions from actual file
+                    const imageBuffer = fs.readFileSync(imagePath);
+                    const dimensions = imageSize(imageBuffer);
+
+                    // Check for preview file
+                    const ext = path.extname(image);
+                    const baseName = image.slice(0, -ext.length);
+                    const previewName = `${baseName}_preview.webp`;
+                    const previewPath = path.join(galleryDir, previewName);
+
+                    let previewInfo = {
+                        url: null,
+                        width: null,
+                        height: null,
+                        type: "webp"
+                    };
+
+                    if (fs.existsSync(previewPath)) {
+                        try {
+                            const previewBuffer = fs.readFileSync(previewPath);
+                            const previewDimensions = imageSize(previewBuffer);
+                            previewInfo = {
+                                url: `/content/${relativePath.replace(ext, "_preview.webp")}`,
+                                width: previewDimensions.width,
+                                height: previewDimensions.height,
+                                type: "webp"
+                            };
+                        } catch (err) {
+                            console.warn(`⚠ Failed to read preview dimensions for ${previewName}: ${err.message}`);
+                        }
+                    }
+
+                    metadata[relativePath] = {
+                        url: `/content/${relativePath}`,
+                        width: dimensions.width,
+                        height: dimensions.height,
+                        type: dimensions.type,
+                        preview: previewInfo
+                    };
+                } catch (err) {
+                    console.warn(`⚠ Failed to read dimensions for ${relativePath}: ${err.message}`);
+                }
+            }
+        }
+    }
+
+    console.log(`✓ Found ${Object.keys(metadata).length} images in local filesystem`);
+    return metadata;
+}
+
 // Query R2 bucket and generate metadata from objects
 async function generateMetadataFromR2() {
+    // Validate credentials
     if (!process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
-        console.error("✗ R2 credentials not available. Cannot fetch metadata.");
-        return {};
+        const missing = [];
+        if (!process.env.R2_ENDPOINT) missing.push("R2_ENDPOINT");
+        if (!process.env.R2_ACCESS_KEY_ID) missing.push("R2_ACCESS_KEY_ID");
+        if (!process.env.R2_SECRET_ACCESS_KEY) missing.push("R2_SECRET_ACCESS_KEY");
+
+        throw new Error(`Missing required R2 credentials: ${missing.join(", ")}. ` +
+            `Please set these as environment variables in Cloudflare Pages settings.`);
     }
 
     const r2Client = new S3Client({
@@ -60,13 +148,16 @@ async function generateMetadataFromR2() {
         },
     });
 
-    const metadata = {};
-    const previewKeys = {};
+    const originals = {};
+    const previews = {};
     let continuationToken = undefined;
+    let totalObjects = 0;
+    let skippedObjects = 0;
 
     console.log("📥 Querying R2 bucket for images...");
 
     try {
+        // PASS 1: Collect all objects
         do {
             const response = await r2Client.send(
                 new ListObjectsV2Command({
@@ -76,26 +167,14 @@ async function generateMetadataFromR2() {
             );
 
             if (response.Contents) {
+                totalObjects += response.Contents.length;
+
                 for (const obj of response.Contents) {
                     const key = obj.Key;
 
                     // Skip metadata files and non-image files
                     if (key.startsWith(".") || !key.match(/\.(jpg|jpeg|png|webp)$/i)) {
-                        continue;
-                    }
-
-                    // Handle preview files separately
-                    if (key.includes("_preview")) {
-                        const basePath = extractBasePath(key);
-                        const dimensions = extractDimensionsFromKey(key);
-                        if (dimensions) {
-                            previewKeys[basePath] = {
-                                key: key,
-                                width: dimensions.width,
-                                height: dimensions.height,
-                                type: "webp"
-                            };
-                        }
+                        skippedObjects++;
                         continue;
                     }
 
@@ -103,77 +182,126 @@ async function generateMetadataFromR2() {
                     const dimensions = extractDimensionsFromKey(key);
                     if (!dimensions) {
                         console.warn(`⚠ Could not extract dimensions from key: ${key}`);
+                        skippedObjects++;
                         continue;
                     }
 
-                    const originalPath = extractOriginalPathFromKey(key);
                     const basePath = extractBasePath(key);
                     const type = key.match(/\.(\w+)$/i)?.[1]?.toLowerCase() || "jpg";
 
-                    // Get preview info if available
-                    const previewInfo = previewKeys[basePath];
-
-                    metadata[originalPath] = {
-                        url: `${PUBLIC_URL}/${key}`,
-                        width: dimensions.width,
-                        height: dimensions.height,
-                        type: type,
-                        preview: previewInfo ? {
-                            url: `${PUBLIC_URL}/${previewInfo.key}`,
-                            width: previewInfo.width,
-                            height: previewInfo.height,
-                            type: previewInfo.type
-                        } : {
-                            url: null,
-                            width: null,
-                            height: null,
-                            type: "webp"
-                        }
-                    };
+                    // Separate previews from originals
+                    if (key.includes("_preview")) {
+                        previews[basePath] = {
+                            key: key,
+                            width: dimensions.width,
+                            height: dimensions.height,
+                            type: type
+                        };
+                    } else {
+                        const originalPath = extractOriginalPathFromKey(key);
+                        originals[originalPath] = {
+                            key: key,
+                            basePath: basePath,
+                            width: dimensions.width,
+                            height: dimensions.height,
+                            type: type
+                        };
+                    }
                 }
             }
 
             continuationToken = response.NextContinuationToken;
         } while (continuationToken);
 
-        console.log(`✓ Found ${Object.keys(metadata).length} images in R2`);
+        console.log(`✓ R2 Scan Complete:`);
+        console.log(`  Total objects: ${totalObjects}`);
+        console.log(`  Skipped: ${skippedObjects}`);
+        console.log(`  Original images: ${Object.keys(originals).length}`);
+        console.log(`  Preview images: ${Object.keys(previews).length}`);
+
+        // PASS 2: Match previews to originals and build final metadata
+        const metadata = {};
+        let matchedPreviews = 0;
+
+        for (const [originalPath, originalData] of Object.entries(originals)) {
+            const previewData = previews[originalData.basePath];
+
+            if (previewData) {
+                matchedPreviews++;
+            }
+
+            metadata[originalPath] = {
+                url: `${PUBLIC_URL}/${originalData.key}`,
+                width: originalData.width,
+                height: originalData.height,
+                type: originalData.type,
+                preview: previewData ? {
+                    url: `${PUBLIC_URL}/${previewData.key}`,
+                    width: previewData.width,
+                    height: previewData.height,
+                    type: previewData.type
+                } : {
+                    url: null,
+                    width: null,
+                    height: null,
+                    type: "webp"
+                }
+            };
+        }
+
+        console.log(`✓ Preview matching: ${matchedPreviews}/${Object.keys(originals).length} images have previews`);
+
+        if (Object.keys(originals).length > 0 && matchedPreviews < Object.keys(originals).length * 0.8) {
+            console.warn(`⚠ Warning: Less than 80% of images have preview matches. ` +
+                `This may indicate an issue with preview generation or upload.`);
+        }
+
         return metadata;
     } catch (err) {
         console.error(`✗ Error querying R2: ${err.message}`);
-        return {};
+        console.error(`  Endpoint: ${process.env.R2_ENDPOINT}`);
+        console.error(`  Bucket: photos`);
+        throw err;
     }
 }
 
 async function readImageMetadata() {
     const metadataPath = path.join("src/_data", "imageMetadata.json");
 
-    // If local file exists, use it
+    // Priority 1: If local metadata file exists, use it (fastest)
     if (fs.existsSync(metadataPath)) {
+        console.log("📄 Using cached imageMetadata.json");
         return JSON.parse(fs.readFileSync(metadataPath, "utf-8"));
     }
 
-    // If on Cloudflare, generate metadata from R2 bucket
+    // Priority 2: If on Cloudflare, generate metadata from R2 bucket
     if (isCloudflare) {
-        console.log("🔗 Running on Cloudflare Pages, generating imageMetadata.json from R2 bucket...");
+        console.log("☁️ Running on Cloudflare Pages, generating metadata from R2...");
         try {
             const metadata = await generateMetadataFromR2();
 
-            // Save generated metadata to file
-            const dir = path.dirname(metadataPath);
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
+            // Optionally save to disk (though it might not persist in CF Pages)
+            try {
+                const dir = path.dirname(metadataPath);
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true });
+                }
+                fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+                console.log(`✓ Saved generated imageMetadata.json`);
+            } catch (writeErr) {
+                console.warn(`⚠ Could not save metadata file (expected on CF Pages): ${writeErr.message}`);
             }
-            fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
-            console.log(`✓ Saved generated imageMetadata.json with ${Object.keys(metadata).length} images`);
 
             return metadata;
         } catch (err) {
             console.error(`✗ Failed to generate metadata from R2: ${err.message}`);
-            return {};
+            throw err;
         }
     }
 
-    return {};
+    // Priority 3: Local development - read from filesystem
+    console.log("💻 Local development mode, reading from filesystem...");
+    return await generateMetadataFromLocalFiles();
 }
 
 function getImageNumber(fileName) {
@@ -237,10 +365,10 @@ async function getGalleries() {
             if (entry.preview) {
                 const previewKey = `portfolio/${entry.folder}/${entry.preview}`;
                 if (imageMetadata[previewKey]) {
-                    previewUrl = imageMetadata[previewKey].url;
+                    previewUrl = imageMetadata[previewKey].preview.url;
                 }
             } else if (images.length > 0) {
-                previewUrl = images[0].url;
+                previewUrl = images[0].preview.url;
             }
 
             galleries.push({
@@ -265,10 +393,10 @@ async function getGalleries() {
                 if (entry.preview) {
                     const previewKey = `events/${entry.folder}/${entry.preview}`;
                     if (imageMetadata[previewKey]) {
-                        previewUrl = imageMetadata[previewKey].url;
+                        previewUrl = imageMetadata[previewKey].preview.url;
                     }
                 } else if (images.length > 0) {
-                    previewUrl = images[0].url;
+                    previewUrl = images[0].preview.url;
                 }
             }
 
