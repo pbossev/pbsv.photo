@@ -30,16 +30,16 @@ eleventyComputed:
     class="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center"
     onclick="if(event.target === event.currentTarget) window.location.href = '/galleries/';">
     <div class="bg-neutral-900 border border-neutral-700 p-8 max-w-md w-full mx-4 relative">
-      <h2 class="text-2xl mb-4 text-white">🔒 Protected Gallery</h2>
+      <h2 class="text-2xl mb-4 text-neutral-200">🔒 Protected Gallery</h2>
       <p class="text-neutral-400 mb-6">This gallery is password protected.</p>
       <div class="relative">
         <input
           type="text"
           id="galleryPassword"
           placeholder="Enter password"
-          class="w-full px-4 py-2 pr-12 bg-neutral-800 border border-neutral-700 text-white focus:outline-none focus:border-neutral-500"
+          class="w-full px-4 py-2 pr-12 bg-neutral-800 border border-neutral-700 text-neutral-200 focus:outline-none focus:border-neutral-500"
           onkeypress="if(event.key==='Enter') unlockGallery()" />
-        <button onclick="unlockGallery()" class="absolute right-0 top-0 h-full aspect-square bg-white text-black border-l border-neutral-700 hover:bg-neutral-200 transition-colors flex items-center justify-center">
+        <button onclick="unlockGallery()" class="absolute right-0 top-0 h-full aspect-square bg-neutral-200 text-neutral-900 border-l border-neutral-700 hover:bg-neutral-300 transition-colors flex items-center justify-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="w-5 h-5"
@@ -253,7 +253,7 @@ eleventyComputed:
 <button
   id="prevBtn"
   onclick="navigateImage(-1)"
-  class="absolute left-4 top-1/2 -translate-y-1/2 z-[10001] bg-black/50 text-white p-3 hover:bg-black/70 transition-colors duration-200"
+  class="absolute left-4 top-1/2 -translate-y-1/2 z-[10001] bg-black/50 text-neutral-200 p-3 hover:bg-black/70 transition-colors duration-200"
   style="display: none;">
   <!-- Left Chevron SVG -->
   <svg
@@ -272,7 +272,7 @@ eleventyComputed:
 <button
   id="nextBtn"
   onclick="navigateImage(1)"
-  class="absolute right-4 top-1/2 -translate-y-1/2 z-[10001] bg-black/50 text-white p-3 hover:bg-black/70 transition-colors duration-200"
+  class="absolute right-4 top-1/2 -translate-y-1/2 z-[10001] bg-black/50 text-neutral-200 p-3 hover:bg-black/70 transition-colors duration-200"
   style="display: none;">
   <!-- Right Chevron SVG -->
   <svg
@@ -294,7 +294,7 @@ eleventyComputed:
     id="downloadBtn"
     href="#"
     onclick="downloadImage(event)">
-    <button class="bg-white/20 text-white w-10 aspect-square flex items-center justify-center hover:bg-white/30 transition-colors duration-200">
+    <button class="bg-neutral-200/20 text-neutral-200 w-10 aspect-square flex items-center justify-center hover:bg-neutral-200/30 transition-colors duration-200">
       <!-- Download Icon -->
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -310,7 +310,7 @@ eleventyComputed:
       </svg>
     </button>
   </a>
-  <button onclick="closeLightbox()" class="bg-white/20 text-white w-10 aspect-square flex items-center justify-center hover:bg-white/30 transition-colors duration-200">
+  <button onclick="closeLightbox()" class="bg-neutral-200/20 text-neutral-200 w-10 aspect-square flex items-center justify-center hover:bg-neutral-200/30 transition-colors duration-200">
     <!-- Close Icon -->
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -339,7 +339,7 @@ eleventyComputed:
 
 <!-- Zoom Controls -->
 <div class="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-[10000]">
-  <button onclick="zoomOut()" class="bg-white/20 text-white w-10 aspect-square flex items-center justify-center hover:bg-white/30 transition-colors duration-200">
+  <button onclick="zoomOut()" class="bg-neutral-200/20 text-neutral-200 w-10 aspect-square flex items-center justify-center hover:bg-neutral-200/30 transition-colors duration-200">
     <svg
       width="16"
       height="16"
@@ -359,10 +359,10 @@ eleventyComputed:
         y2="11" />
     </svg>
   </button>
-  <button onclick="resetZoom()" class="bg-white/20 text-white px-4 h-10 flex items-center justify-center hover:bg-white/30 transition-colors duration-200 text-sm font-mono">
+  <button onclick="resetZoom()" class="bg-neutral-200/20 text-neutral-200 px-4 h-10 flex items-center justify-center hover:bg-neutral-200/30 transition-colors duration-200 text-sm font-mono">
     <span id="zoomPercentage">100%</span>
   </button>
-  <button onclick="zoomIn()" class="bg-white/20 text-white w-10 aspect-square flex items-center justify-center hover:bg-white/30 transition-colors duration-200">
+  <button onclick="zoomIn()" class="bg-neutral-200/20 text-neutral-200 w-10 aspect-square flex items-center justify-center hover:bg-neutral-200/30 transition-colors duration-200">
     <svg
       width="16"
       height="16"
